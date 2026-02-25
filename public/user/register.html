@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký - NewsFeed</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #fafafa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .register-container {
+            background: white;
+            border: 1px solid #dbdbdb;
+            padding: 40px;
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 51px;
+            font-weight: 300;
+            margin-bottom: 24px;
+            color: #262626;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            color: #8e8e8e;
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 6px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 9px 0 7px 8px;
+            background-color: #fafafa;
+            border: 1px solid #dbdbdb;
+            border-radius: 3px;
+            font-size: 14px;
+            color: #262626;
+            outline: none;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            border-color: #a8a8a8;
+        }
+
+        input::placeholder {
+            color: #8e8e8e;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 7px 16px;
+            background-color: #0095f6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #1877f2;
+        }
+
+        .btn:disabled {
+            background-color: #b2dffc;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #ed4956;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+            text-align: left;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            color: #0095f6;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+            text-align: left;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .login-link {
+            margin-top: 18px;
+            padding: 20px;
+            background: white;
+            border: 1px solid #dbdbdb;
+            font-size: 14px;
+            color: #262626;
+        }
+
+        .login-link p {
+            margin: 0;
+            color: #262626;
+        }
+
+        .login-link a {
+            color: #0095f6;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+        <div class="register-container">
+            <div class="logo">NewsFeed</div>
+            <div class="subtitle">Đăng ký để xem ảnh và video từ bạn bè.</div>
+            <form id="registerForm">
+                <div class="form-group">
+                    <input type="text" id="username" name="username" placeholder="Tên người dùng" required>
+                </div>
+                <div class="form-group">
+                    <input type="email" id="email" name="email" placeholder="Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="password" name="password" placeholder="Mật khẩu" required>
+                </div>
+                <div class="error-message" id="errorMessage"></div>
+                <div class="success-message" id="successMessage"></div>
+                <button type="submit" class="btn" id="submitBtn">Đăng ký</button>
+            </form>
+        </div>
+        <div class="login-link">
+            <p>Đã có tài khoản? <a href="/user/login.html">Đăng nhập</a></p>
+        </div>
+    </div>
+
+    <script>
+        // Lấy base URL (http://localhost:3000 hoặc origin hiện tại)
+        const baseUrl = window.location.origin === 'http://127.0.0.1:5500' || window.location.protocol === 'file:' 
+            ? 'http://localhost:3000' 
+            : window.location.origin;
+        
+        // Cập nhật link đăng nhập
+        document.querySelector('.login-link a').href = `${baseUrl}/user/login.html`;
+
+        const registerForm = document.getElementById('registerForm');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const submitBtn = document.getElementById('submitBtn');
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            // Ẩn thông báo cũ
+            errorMessage.classList.remove('show');
+            successMessage.classList.remove('show');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Đang xử lý...';
+
+            try {
+                const response = await fetch(`${baseUrl}/api/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    successMessage.textContent = data.message || 'Đăng ký thành công! Đang chuyển hướng...';
+                    successMessage.classList.add('show');
+                    
+                    setTimeout(() => {
+                        window.location.href = `${baseUrl}/post.html`;
+                    }, 1000);
+                } else {
+                    errorMessage.textContent = data.error || 'Đăng ký thất bại';
+                    errorMessage.classList.add('show');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Đăng ký';
+                }
+            } catch (error) {
+                console.error('Lỗi:', error);
+                errorMessage.textContent = 'Không thể kết nối với server';
+                errorMessage.classList.add('show');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Đăng ký';
+            }
+        });
+    </script>
+</body>
+
+</html>
