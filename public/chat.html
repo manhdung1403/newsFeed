@@ -264,6 +264,24 @@
             text-align: center;
             padding: 24px;
         }
+
+        /* conversation menu (header dropdown) */
+        .conv-menu {
+            position: absolute;
+            right: 0;
+            top: 40px;
+            background: #0b1220;
+            border: 1px solid #1f2937;
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(2,6,23,0.6);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 180px;
+        }
+        .conv-menu .btn { padding:8px; text-align:left; }
     </style>
 </head>
 
@@ -290,6 +308,12 @@
                 <div style="display:flex;gap:8px;align-items:center">
                     <input id="searchInConv" placeholder="Tìm trong hội thoại"
                         style="padding:6px;border-radius:6px;border:1px solid #0b1220;background:#071018;color:#e5e7eb">
+                    <div style="position:relative">
+                        <button id="convMenuBtn" class="btn" title="Tùy chọn"><i class="fa-solid fa-ellipsis"></i></button>
+                        <div id="convMenu" class="conv-menu" style="display:none">
+                            <button id="deleteConvBtn" class="btn" style="background:#ef4444;color:#fff">Xóa cuộc trò chuyện</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 

@@ -448,3 +448,32 @@ app.get('/api/conversations/:id/participants', requireAuth, async (req, res) => 
         res.status(500).json({ error: err.message });
     }
 });
+
+// Xóa conversation (và các messages + participants liên quan)
+app.delete('/api/conversations/:id', requireAuth, async (req, res) => {
+    try {
+        const convId = parseInt(req.params.id, 10);
+        const userId = req.session.userId;
+        let pool = await sql.connect(dbConfig);
+
+        // Kiểm tra user có tham gia conversation này không
+        const check = await pool.request()
+            .input('convId', sql.Int, convId)
+            .input('userId', sql.Int, userId)
+            .query(`SELECT 1 FROM ConversationParticipants WHERE conversation_id = @convId AND user_id = @userId`);
+        if (!check.recordset || check.recordset.length === 0) return res.status(403).json({ error: 'Không có quyền xóa' });
+
+        // Xóa messages, participants, rồi conversation (theo thứ tự để tránh vi phạm FK)
+        await pool.request().input('convId', sql.Int, convId).query(`DELETE FROM Messages WHERE conversation_id = @convId`);
+        await pool.request().input('convId', sql.Int, convId).query(`DELETE FROM ConversationParticipants WHERE conversation_id = @convId`);
+        await pool.request().input('convId', sql.Int, convId).query(`DELETE FROM Conversations WHERE id = @convId`);
+
+        // Thông báo realtime tới những client trong room (nếu có)
+        io.to(`conversation_${convId}`).emit('conversation_deleted', { conversationId: convId });
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Delete conversation error', err);
+        res.status(500).json({ error: err.message });
+    }
+});

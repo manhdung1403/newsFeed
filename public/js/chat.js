@@ -20,6 +20,9 @@
     const attachBtn = document.getElementById('attachBtn');
     const imageInput = document.getElementById('imageInput');
     const emojiBtn = document.getElementById('emojiBtn');
+    const convMenuBtn = document.getElementById('convMenuBtn');
+    const convMenu = document.getElementById('convMenu');
+    const deleteConvBtn = document.getElementById('deleteConvBtn');
     const searchConvs = document.getElementById('searchConvs');
     const searchInConv = document.getElementById('searchInConv');
 
@@ -102,6 +105,12 @@
         if (sendBtn) sendBtn.disabled = false;
         if (attachBtn) attachBtn.disabled = false;
         if (emojiBtn) emojiBtn.disabled = false;
+        if (convMenuBtn) convMenuBtn.disabled = false;
+
+        // highlight selected conv in sidebar
+        Array.from(conversationsEl.children).forEach(el => {
+            el.style.background = (String(el.dataset.id) === String(currentConv)) ? '#0b1220' : '';
+        });
 
         // fetch participants to determine the other user's name
         try {
@@ -151,6 +160,7 @@
         if (sendBtn) sendBtn.disabled = true;
         if (attachBtn) attachBtn.disabled = true;
         if (emojiBtn) emojiBtn.disabled = true;
+        if (convMenuBtn) convMenuBtn.disabled = true;
         currentOtherId = null; currentOtherName = null;
     }
 
@@ -331,6 +341,48 @@
     function hideEmojiPanel() { if (emojiPanel) emojiPanel.style.display = 'none'; }
 
     emojiBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleEmojiPanel(); });
+
+    // Conversation header menu handlers
+    if (convMenuBtn) {
+        convMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!currentConv) return alert('Chưa chọn hội thoại');
+            if (!convMenu) return;
+            convMenu.style.display = (convMenu.style.display === 'flex') ? 'none' : 'flex';
+        });
+    }
+    document.addEventListener('click', (ev) => {
+        if (!convMenu) return;
+        if (convMenu.style.display === 'none') return;
+        if (ev.target === convMenuBtn || convMenu.contains(ev.target)) return;
+        convMenu.style.display = 'none';
+    });
+    if (deleteConvBtn) {
+        deleteConvBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (!currentConv) return alert('Chưa chọn hội thoại');
+            const ok = confirm('Bạn có chắc muốn xóa cuộc trò chuyện này?');
+            if (!ok) return;
+            try {
+                const res = await fetch(`${baseUrl}/api/conversations/${currentConv}`, { method: 'DELETE', credentials: 'include' });
+                if (res.ok) {
+                    alert('Đã xóa cuộc trò chuyện');
+                    currentConv = null;
+                    allMessages = [];
+                    showNoConversationPlaceholder();
+                    await loadConversations();
+                } else {
+                    const t = await res.text();
+                    alert('Không thể xóa: ' + t);
+                }
+            } catch (err) {
+                console.error('Delete conv error', err);
+                alert('Lỗi khi xóa');
+            } finally {
+                if (convMenu) convMenu.style.display = 'none';
+            }
+        });
+    }
 
     // Modal close handlers
     function closeImageModal() {
