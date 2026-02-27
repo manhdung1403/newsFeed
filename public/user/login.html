@@ -187,7 +187,7 @@
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    window.location.href = `${baseUrl}/post.html`;
+                    window.location.href = `${baseUrl}/post/post.html`;
                 } else {
                     errorMessage.textContent = data.error || 'Đăng nhập thất bại';
                     errorMessage.classList.add('show');

@@ -196,6 +196,42 @@ app.get('/api/posts', requireAuth, async (req, res) => {
     }
 });
 
+// API tạo bài đăng mới
+app.post('/api/posts', requireAuth, async (req, res) => {
+    try {
+        const { image_url, caption } = req.body;
+        const userId = req.session.userId;
+
+        if (!image_url) {
+            return res.status(400).json({ error: 'URL ảnh là bắt buộc' });
+        }
+
+        let pool = await sql.connect(dbConfig);
+
+        // Tạo bài đăng mới
+        let result = await pool.request()
+            .input('user_id', sql.Int, userId)
+            .input('image_url', sql.VarChar, image_url)
+            .input('caption', sql.NVarChar, caption || null)
+            .query(`
+                INSERT INTO Posts (user_id, image_url, caption, created_at)
+                OUTPUT INSERTED.id, INSERTED.user_id, INSERTED.image_url, INSERTED.caption, INSERTED.created_at
+                VALUES (@user_id, @image_url, @caption, GETDATE())
+            `);
+
+        const newPost = result.recordset[0];
+
+        res.json({
+            success: true,
+            message: 'Bài đăng đã được tạo thành công',
+            post: newPost
+        });
+    } catch (err) {
+        console.error('Lỗi tạo bài đăng:', err);
+        res.status(500).json({ error: "Lỗi server: " + err.message });
+    }
+});
+
 const PORT = 3000;
 app.listen(PORT, async () => {
     console.log(`Server đang chạy tại http://localhost:${PORT}`);

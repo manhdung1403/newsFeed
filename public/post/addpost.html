@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thêm bài đăng - NewsFeed</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #fafafa;
+            padding-bottom: 60px;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-bottom: 1px solid #dbdbdb;
+            padding: 12px 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 935px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 300;
+            color: #262626;
+            letter-spacing: -1px;
+            cursor: pointer;
+        }
+
+        .logo:hover {
+            color: #8e8e8e;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 6px 16px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: background-color 0.2s;
+        }
+
+        .btn-logout {
+            background-color: transparent;
+            color: #262626;
+            border: 1px solid #dbdbdb;
+        }
+
+        .btn-logout:hover {
+            background-color: #fafafa;
+        }
+
+        .btn-profile {
+            background-color: transparent;
+            color: #0095f6;
+            border: 1px solid #dbdbdb;
+        }
+
+        .btn-profile:hover {
+            background-color: #fafafa;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .username {
+            color: #262626;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-container {
+            max-width: 500px;
+            margin: 100px auto;
+            padding: 20px;
+            background: white;
+            border: 1px solid #dbdbdb;
+            border-radius: 3px;
+        }
+
+        .form-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #262626;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #262626;
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #dbdbdb;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #0095f6;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 10px;
+            background-color: #0095f6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            background-color: #1877f2;
+        }
+
+        .btn-submit:disabled {
+            background-color: #dbdbdb;
+            cursor: not-allowed;
+        }
+
+        .btn-back {
+            width: 100%;
+            padding: 10px;
+            background-color: transparent;
+            color: #0095f6;
+            border: 1px solid #dbdbdb;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.2s;
+        }
+
+        .btn-back:hover {
+            background-color: #fafafa;
+        }
+
+        .error-message {
+            color: #ed4956;
+            font-size: 14px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #ffe0e6;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .success-message {
+            color: #31a24c;
+            font-size: 14px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #d4edda;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .preview-image {
+            width: 100%;
+            max-height: 300px;
+            margin-top: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .login-prompt {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border: 1px solid #dbdbdb;
+            border-radius: 3px;
+            margin-top: 60px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .login-prompt h2 {
+            color: #262626;
+            margin-bottom: 16px;
+            font-size: 22px;
+            font-weight: 300;
+        }
+
+        .login-prompt p {
+            color: #8e8e8e;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo" onclick="goToFeed()">NewsFeed</div>
+            <div id="userInfo" class="user-info" style="display: none;">
+                <span class="username" id="usernameDisplay"></span>
+                <button class="btn btn-logout" id="logoutBtn">Đăng xuất</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainForm" style="display: none;">
+        <div class="form-container">
+            <div class="form-title">Tạo bài đăng mới</div>
+            <div id="errorMessage" class="error-message"></div>
+            <div id="successMessage" class="success-message"></div>
+
+            <form id="addPostForm">
+                <div class="form-group">
+                    <label for="imageUrl">URL ảnh:*</label>
+                    <input type="url" id="imageUrl" name="imageUrl" placeholder="https://example.com/image.jpg"
+                        required>
+                    <img id="imagePreview" class="preview-image" alt="Preview">
+                </div>
+
+                <div class="form-group">
+                    <label for="caption">Mô tả:</label>
+                    <textarea id="caption" name="caption" placeholder="Viết gì đó về bài đăng của bạn..."></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit" id="submitBtn">Đăng bài</button>
+                <button type="button" class="btn-back" onclick="goToFeed()">Quay lại</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="loginPrompt" style="display: none;">
+        <div class="login-prompt">
+            <h2>Đăng nhập để đăng bài</h2>
+            <p>Bạn cần đăng nhập để có thể đăng bài lên NewsFeed.</p>
+            <div class="auth-buttons" style="justify-content: center;">
+                <a href="./login.html" class="btn btn-profile">Đăng nhập</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isLoggedIn = false;
+        let currentUser = null;
+
+        const baseUrl = window.location.origin === 'http://127.0.0.1:5500' || window.location.protocol === 'file:'
+            ? 'http://localhost:3000'
+            : window.location.origin;
+
+        // Kiểm tra trạng thái đăng nhập
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch(`${baseUrl}/api/auth/status`, {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+
+                if (data.loggedIn) {
+                    isLoggedIn = true;
+                    currentUser = data.user;
+                    updateUIForLoggedIn();
+                } else {
+                    isLoggedIn = false;
+                    updateUIForLoggedOut();
+                }
+            } catch (error) {
+                console.error("Lỗi khi kiểm tra đăng nhập:", error);
+                updateUIForLoggedOut();
+            }
+        }
+
+        function updateUIForLoggedIn() {
+            const userInfo = document.getElementById('userInfo');
+            const usernameDisplay = document.getElementById('usernameDisplay');
+            const mainForm = document.getElementById('mainForm');
+            const loginPrompt = document.getElementById('loginPrompt');
+
+            userInfo.style.display = 'flex';
+            usernameDisplay.textContent = currentUser.username;
+            mainForm.style.display = 'block';
+            loginPrompt.style.display = 'none';
+        }
+
+        function updateUIForLoggedOut() {
+            const userInfo = document.getElementById('userInfo');
+            const mainForm = document.getElementById('mainForm');
+            const loginPrompt = document.getElementById('loginPrompt');
+
+            userInfo.style.display = 'none';
+            mainForm.style.display = 'none';
+            loginPrompt.style.display = 'block';
+        }
+
+        // Xem trước ảnh khi nhập URL
+        document.getElementById('imageUrl')?.addEventListener('change', function () {
+            const preview = document.getElementById('imagePreview');
+            if (this.value) {
+                preview.src = this.value;
+                preview.style.display = 'block';
+                preview.onerror = function () {
+                    preview.style.display = 'none';
+                    showError('Không thể tải ảnh. Kiểm tra lại URL.');
+                };
+            } else {
+                preview.style.display = 'none';
+            }
+        });
+
+        // Xử lý gửi form
+        document.getElementById('addPostForm')?.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const imageUrl = document.getElementById('imageUrl').value.trim();
+            const caption = document.getElementById('caption').value.trim();
+
+            if (!imageUrl) {
+                showError('Vui lòng nhập URL ảnh');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Đang đăng...';
+
+            try {
+                const response = await fetch(`${baseUrl}/api/posts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        image_url: imageUrl,
+                        caption: caption
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showSuccess('Bài đăng đã được tạo thành công!');
+                    setTimeout(() => {
+                        goToFeed();
+                    }, 1500);
+                } else {
+                    showError(data.error || 'Không thể tạo bài đăng');
+                }
+            } catch (error) {
+                console.error("Lỗi khi đăng bài:", error);
+                showError('Lỗi server: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Đăng bài';
+            }
+        });
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            successDiv.style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            const errorDiv = document.getElementById('errorMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            errorDiv.style.display = 'none';
+        }
+
+        function goToFeed() {
+            window.location.href = `${baseUrl}/post/post.html`;
+        }
+
+        // Xử lý đăng xuất
+        async function handleLogout() {
+            try {
+                const response = await fetch(`${baseUrl}/api/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    isLoggedIn = false;
+                    currentUser = null;
+                    updateUIForLoggedOut();
+                }
+            } catch (error) {
+                console.error("Lỗi khi đăng xuất:", error);
+            }
+        }
+
+        // Khởi tạo
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthStatus();
+
+            document.addEventListener('click', (e) => {
+                if (e.target.id === 'logoutBtn') {
+                    handleLogout();
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
