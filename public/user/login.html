@@ -152,10 +152,10 @@
 
     <script>
         // Lấy base URL (http://localhost:3000 hoặc origin hiện tại)
-        const baseUrl = window.location.origin === 'http://127.0.0.1:5500' || window.location.protocol === 'file:' 
-            ? 'http://localhost:3000' 
+        const baseUrl = window.location.origin === 'http://127.0.0.1:5500' || window.location.protocol === 'file:'
+            ? 'http://localhost:3000'
             : window.location.origin;
-        
+
         // Cập nhật link đăng ký
         document.querySelector('.register-link a').href = `${baseUrl}/user/register.html`;
 
@@ -165,7 +165,7 @@
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
@@ -175,7 +175,7 @@
             submitBtn.textContent = 'Đang xử lý...';
 
             try {
-                const response = await fetch(`${baseUrl}/api/login`, {
+                const response = await fetch(`${baseUrl}/api/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
