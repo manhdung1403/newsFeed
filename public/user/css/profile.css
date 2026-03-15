@@ -1,0 +1,133 @@
+/* Reset & Base */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #fafafa;
+    margin: 0;
+    color: #262626;
+}
+
+.container {
+    max-width: 935px;
+    margin: 0 auto;
+    padding: 30px 20px;
+}
+
+/* Header Profile Section */
+header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 44px;
+    gap: 30px;
+}
+
+.profile-pic {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: #eee;
+    object-fit: cover;
+    border: 1px solid #dbdbdb;
+}
+
+.profile-info {
+    flex-grow: 1;
+}
+
+.username-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.username-row h1 {
+    font-size: 28px;
+    font-weight: 300;
+    margin: 0;
+}
+
+/* Buttons */
+button {
+    background: transparent;
+    border: 1px solid #dbdbdb;
+    color: #262626;
+    padding: 5px 9px;
+    font-weight: 600;
+    font-size: 14px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#logoutBtn {
+    color: #ed4956;
+    border-color: #ed4956;
+}
+
+/* Grid System */
+.tabs {
+    border-top: 1px solid #dbdbdb;
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    margin-bottom: 0;
+}
+
+.tab-item {
+    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 15px 0;
+    border-top: 1px solid #262626;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#posts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+}
+
+.post-item {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    background-color: #efefef;
+    cursor: pointer;
+}
+
+.post-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.3s;
+}
+
+.post-item:hover img {
+    opacity: 0.8;
+    filter: brightness(0.8);
+}
+
+/* Mobile responsive */
+@media (max-width: 735px) {
+    #posts {
+        gap: 3px;
+    }
+
+    .profile-pic {
+        width: 77px;
+        height: 77px;
+    }
+
+    header {
+        gap: 15px;
+    }
+
+    .username-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}
