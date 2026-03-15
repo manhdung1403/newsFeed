@@ -26,6 +26,26 @@
     const searchConvs = document.getElementById('searchConvs');
     const searchInConv = document.getElementById('searchInConv');
 
+    // ✅ Fix múi giờ: bỏ Z để JS không cộng thêm 7 tiếng
+    function parseDate(str) {
+        if (!str) return new Date();
+        return new Date(String(str).replace('Z', '').replace(/\+\d{2}:\d{2}$/, ''));
+    }
+
+    // ✅ Hiển thị thời gian tương đối
+    function formatRelative(dt) {
+        if (!dt || isNaN(dt.getTime())) return 'không rõ';
+        const diff = Math.floor((Date.now() - dt.getTime()) / 1000);
+        if (diff < 0) return 'vừa xong';
+        if (diff < 60) return `${diff} giây trước`;
+        const mins = Math.floor(diff / 60);
+        if (mins < 60) return `${mins} phút trước`;
+        const hours = Math.floor(mins / 60);
+        if (hours < 24) return `${hours} giờ trước`;
+        const days = Math.floor(hours / 24);
+        return `${days} ngày trước`;
+    }
+
     async function init() {
         const r = await fetch(`${baseUrl}/api/auth/status`, { credentials: 'include' });
         const data = await r.json();
@@ -42,15 +62,33 @@
 
         // ✅ Cập nhật trạng thái real-time khi user online/offline
         socket.on('user_status', (s) => {
-            if (!currentOtherId) return;
-            if (String(s.userId) !== String(currentOtherId)) return;
-            if (s.status === 'online') {
-                chatStatus.textContent = 'Đang hoạt động';
-            } else {
-                chatStatus.textContent = s.lastSeen
-                    ? 'Hoạt động ' + formatRelative(parseDate(s.lastSeen))
-                    : 'Không hoạt động';
+            // Cập nhật header chat
+            if (currentOtherId && String(s.userId) === String(currentOtherId)) {
+                if (s.status === 'online') {
+                    chatStatus.textContent = 'Đang hoạt động';
+                } else {
+                    chatStatus.textContent = s.lastSeen
+                        ? 'Hoạt động ' + formatRelative(parseDate(s.lastSeen))
+                        : 'Không hoạt động';
+                }
             }
+            // ✅ Cập nhật trạng thái trong sidebar
+            Array.from(conversationsEl.children).forEach(el => {
+                if (String(el.dataset.otherId) === String(s.userId)) {
+                    const statusEl = el.querySelector('.other-status');
+                    if (statusEl) {
+                        if (s.status === 'online') {
+                            statusEl.textContent = 'Đang hoạt động';
+                            statusEl.style.color = '#34d399';
+                        } else {
+                            statusEl.textContent = s.lastSeen
+                                ? 'Hoạt động ' + formatRelative(parseDate(s.lastSeen))
+                                : 'Không hoạt động';
+                            statusEl.style.color = '';
+                        }
+                    }
+                }
+            });
         });
 
         const convs = await loadConversations();
@@ -61,7 +99,7 @@
             const convId = parseInt(convParam, 10);
             if (!isNaN(convId)) {
                 const found = convs && convs.find && convs.find(c => c.id === convId);
-                openConversation(convId, found ? (found.title || ('Hội thoại #' + convId)) : undefined);
+                openConversation(convId, found ? (found.other_name || found.title || ('Hội thoại #' + convId)) : undefined);
                 return;
             }
         }
@@ -76,14 +114,38 @@
         return convs;
     }
 
+    // ✅ Sidebar hiển thị tên + trạng thái hoạt động
     function renderConversations(convs) {
         conversationsEl.innerHTML = '';
         convs.forEach(c => {
             const el = document.createElement('div');
             el.className = 'conv';
             el.dataset.id = c.id;
-            el.innerHTML = `<div class="avatar">C</div><div class="meta"><div class="name">${c.title || ('Hội thoại #' + c.id)}</div><div class="small">${c.last_message || ''}</div></div><div class="small">${c.last_updated ? new Date(c.last_updated).toLocaleString() : ''}</div>`;
-            el.addEventListener('click', () => openConversation(c.id, c.title));
+            el.dataset.otherId = c.other_id || '';
+
+            // Tính trạng thái
+            let statusText = '';
+            let statusColor = '#9ca3af';
+            if (c.other_is_online) {
+                statusText = 'Đang hoạt động';
+                statusColor = '#34d399';
+            } else if (c.other_last_seen) {
+                statusText = 'Hoạt động ' + formatRelative(parseDate(c.other_last_seen));
+            }
+
+            const displayName = c.other_name || c.title || ('Hội thoại #' + c.id);
+
+            el.innerHTML = `
+                <div class="avatar">${displayName.charAt(0).toUpperCase()}</div>
+                <div class="meta" style="flex:1;min-width:0">
+                    <div class="name">${displayName}</div>
+                    <div class="small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.last_message || ''}</div>
+                </div>
+                <div style="text-align:right;flex-shrink:0">
+                    <div class="small other-status" style="color:${statusColor}">${statusText}</div>
+                </div>`;
+
+            el.addEventListener('click', () => openConversation(c.id, displayName));
             conversationsEl.appendChild(el);
         });
     }
@@ -121,7 +183,6 @@
                     currentOtherName = other.username;
                     chatTitle.textContent = other.username || chatTitle.textContent;
 
-                    // ✅ Hiển thị trạng thái dựa theo is_online và last_seen
                     if (other.is_online) {
                         chatStatus.textContent = 'Đang hoạt động';
                     } else if (other.last_seen) {
@@ -220,7 +281,6 @@
             console.log('Ignoring incoming direct message because no conversation is selected.', msg);
         } else {
             loadConversations();
-            console.log('Tin nhắn mới từ hội thoại', convId || '(direct)');
         }
     }
 
@@ -430,20 +490,6 @@
 
     function autoScroll() { messagesEl.scrollTop = messagesEl.scrollHeight; }
 
-    // ✅ formatRelative hiển thị thời gian offline chính xác
-    function formatRelative(dt) {
-        if (!dt || isNaN(dt.getTime())) return 'không rõ';
-        const diff = Math.floor((Date.now() - dt.getTime()) / 1000);
-        if (diff < 0) return 'vừa xong';
-        if (diff < 60) return `${diff} giây trước`;
-        const mins = Math.floor(diff / 60);
-        if (mins < 60) return `${mins} phút trước`;
-        const hours = Math.floor(mins / 60);
-        if (hours < 24) return `${hours} giờ trước`;
-        const days = Math.floor(hours / 24);
-        return `${days} ngày trước`;
-    }
-
     function escapeHtml(s) {
         return String(s).replace(/[&<>"']/g, (c) => ({
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": "&#39;"
@@ -457,10 +503,6 @@
             messageInput.focus();
         }
     }
-    // ✅ Fix múi giờ: bỏ Z để JS không cộng thêm 7 tiếng
-    function parseDate(str) {
-        if (!str) return new Date();
-        return new Date(String(str).replace('Z', '').replace(/\+\d{2}:\d{2}$/, ''));
-    }
+
     init();
 })();

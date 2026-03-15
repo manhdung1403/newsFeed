@@ -292,17 +292,27 @@ app.get('/api/messages/:receiverId', requireAuth, async (req, res) => {
     }
 });
 
+// ✅ Trả thêm other_last_seen và other_is_online để sidebar hiển thị trạng thái
 app.get('/api/conversations', requireAuth, async (req, res) => {
     try {
         const userId = req.session.userId;
         let pool = await sql.connect(dbConfig);
         const result = await pool.request()
             .input('userId', sql.Int, userId)
-            .query(`SELECT c.id, c.title, c.last_message, c.last_updated
-                    FROM Conversations c
-                    WHERE c.id IN (SELECT conversation_id FROM ConversationParticipants WHERE user_id = @userId)
-                    ORDER BY c.last_updated DESC`);
-        res.json(result.recordset);
+            .query(`
+                SELECT c.id, c.title, c.last_message, c.last_updated,
+                    u.id as other_id, u.username as other_name, u.last_seen as other_last_seen
+                FROM Conversations c
+                JOIN ConversationParticipants cp2 ON cp2.conversation_id = c.id AND cp2.user_id <> @userId
+                JOIN Users u ON u.id = cp2.user_id
+                WHERE c.id IN (SELECT conversation_id FROM ConversationParticipants WHERE user_id = @userId)
+                ORDER BY c.last_updated DESC
+            `);
+        const rows = result.recordset.map(r => ({
+            ...r,
+            other_is_online: onlineUsers.has(String(r.other_id))
+        }));
+        res.json(rows);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -414,7 +424,6 @@ app.get('/api/conversations/:id/participants', requireAuth, async (req, res) => 
                 JOIN Users u ON cp.user_id = u.id
                 WHERE cp.conversation_id = @convId
             `);
-        // Gắn thêm is_online dựa vào onlineUsers map (không cần query DB)
         const rows = result.recordset.map(u => ({
             ...u,
             is_online: onlineUsers.has(String(u.id))
