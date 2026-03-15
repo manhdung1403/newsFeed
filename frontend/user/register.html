@@ -233,7 +233,7 @@
             submitBtn.textContent = 'Đang xử lý...';
 
             try {
-                const response = await fetch(`${baseUrl}/api/register`, {
+                const response = await fetch(`${baseUrl}/api/auth/register`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -249,7 +249,7 @@
                     successMessage.classList.add('show');
 
                     setTimeout(() => {
-                        window.location.href = `${baseUrl}/post.html`;
+                        window.location.href = `${baseUrl}/post/post.html`;
                     }, 1000);
                 } else {
                     errorMessage.textContent = data.error || 'Đăng ký thất bại';

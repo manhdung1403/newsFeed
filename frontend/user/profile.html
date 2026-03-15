@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="vi">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -85,7 +86,8 @@
             font-weight: 600;
             letter-spacing: 1px;
             padding: 15px 0;
-            border-top: 1px solid #262626; /* Active tab */
+            border-top: 1px solid #262626;
+            /* Active tab */
             display: flex;
             align-items: center;
             gap: 6px;
@@ -119,10 +121,24 @@
 
         /* Mobile responsive */
         @media (max-width: 735px) {
-            #posts { gap: 3px; }
-            .profile-pic { width: 77px; height: 77px; }
-            header { gap: 15px; }
-            .username-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+            #posts {
+                gap: 3px;
+            }
+
+            .profile-pic {
+                width: 77px;
+                height: 77px;
+            }
+
+            header {
+                gap: 15px;
+            }
+
+            .username-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
         }
     </style>
 </head>
@@ -131,7 +147,7 @@
     <div class="container">
         <header>
             <img src="https://via.placeholder.com/150" class="profile-pic" alt="Profile" />
-            
+
             <section class="profile-info">
                 <div class="username-row">
                     <h1 id="displayUsername">...</h1>
@@ -175,12 +191,12 @@
 
             const postsResp = await fetch('/api/posts', { credentials: 'include' });
             const postsContainer = document.getElementById('posts');
-            
+
             if (!postsResp.ok) { postsContainer.innerHTML = '<div>Lỗi tải dữ liệu.</div>'; return; }
-            
+
             const allPosts = await postsResp.json();
             const myPosts = allPosts.filter(p => String(p.user_id) === String(user.id));
-            
+
             document.getElementById('postCount').innerHTML = `<strong>${myPosts.length}</strong> bài viết`;
 
             if (myPosts.length === 0) {
@@ -201,7 +217,7 @@
 
         document.getElementById('logoutBtn').addEventListener('click', async function () {
             try {
-                await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+                await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
             } catch (e) { }
             window.location.href = '/user/login.html';
         });
@@ -209,4 +225,5 @@
         loadProfile().catch(console.error);
     </script>
 </body>
+
 </html>

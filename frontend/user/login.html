@@ -175,7 +175,7 @@
             submitBtn.textContent = 'Đang xử lý...';
 
             try {
-                const response = await fetch(`${baseUrl}/api/login`, {
+                const response = await fetch(`${baseUrl}/api/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

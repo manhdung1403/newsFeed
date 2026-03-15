@@ -480,7 +480,7 @@
         // Xử lý đăng xuất
         async function handleLogout() {
             try {
-                const response = await fetch(`${baseUrl}/api/logout`, {
+                const response = await fetch(`${baseUrl}/api/auth/logout`, {
                     method: 'POST',
                     credentials: 'include'
                 });

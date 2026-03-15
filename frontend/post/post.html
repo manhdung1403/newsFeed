@@ -429,7 +429,7 @@
                     const liked = !!post.liked_by_current_user;
                     const likedClass = liked ? 'liked' : '';
                     const likeLabel = liked ? '💖 Đã thả tim' : '🤍 Thả tim';
-                    
+
                     postElement.innerHTML = `
                         <div class="post-header">
                             <div class="post-avatar">${avatarInitial}</div>
@@ -628,7 +628,7 @@
         // Xử lý đăng xuất
         async function handleLogout() {
             try {
-                const response = await fetch(`${baseUrl}/api/logout`, {
+                const response = await fetch(`${baseUrl}/api/auth/logout`, {
                     method: 'POST',
                     credentials: 'include'
                 });
