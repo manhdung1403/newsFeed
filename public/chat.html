@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Chat - NewsFeed</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #0f1720;
+            --panel: #111827;
+            --muted: #9ca3af;
+            --accent: #0ea5e9;
+            --bubble: #0b1220
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: #e5e7eb;
+            font-family: Inter, system-ui, Arial
+        }
+
+        .app {
+            max-width: 1100px;
+            margin: 24px auto;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, .6);
+            /* full available viewport height minus margins so inner columns can scroll independently */
+            height: calc(100vh - 48px);
+        }
+
+        .sidebar {
+            width: 320px;
+            background: var(--panel);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            height: 100%;
+        }
+
+        .search {
+            display: flex;
+            gap: 8px
+        }
+
+        .search input {
+            flex: 1;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #1f2937;
+            background: #0b1220;
+            color: #e5e7eb
+        }
+
+        .conversations {
+            overflow: auto;
+            flex: 1
+        }
+
+        .conv {
+            padding: 10px;
+            border-radius: 6px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            cursor: pointer
+        }
+
+        .conv:hover {
+            background: #0b1220
+        }
+
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #f97316, #ef4444);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700
+        }
+
+        .conv .meta {
+            flex: 1
+        }
+
+        .conv .meta .name {
+            font-weight: 600
+        }
+
+        .badge {
+            background: #ef4444;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 999px;
+            font-size: 12px
+        }
+
+        .chat-window {
+            flex: 1;
+            background: linear-gradient(180deg, #071018 0%, #08121a 100%);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .chat-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #0b1220;
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .chat-main {
+            flex: 1;
+            padding: 16px;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px
+        }
+
+        .msg {
+            max-width: 70%;
+            padding: 10px;
+            border-radius: 10px;
+            background: #0b1220
+        }
+
+        .msg.me {
+            margin-left: auto;
+            background: #045f8c
+        }
+
+        .msg .meta {
+            font-size: 12px;
+            color: var(--muted)
+        }
+
+        .msg img.inline-image {
+            display: block;
+            max-width: 320px;
+            border-radius: 8px;
+            margin-top: 8px;
+            cursor: pointer;
+        }
+
+        .input-bar {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-top: 1px solid #0b1220;
+            gap: 8px
+        }
+
+        .input-bar input[type=text] {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #1f2937;
+            background: #071018;
+            color: #e5e7eb
+        }
+
+        .btn {
+            background: var(--accent);
+            color: #012;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer
+        }
+
+        .small {
+            font-size: 12px;
+            color: var(--muted)
+        }
+
+        .reply-box {
+            background: #071829;
+            padding: 8px;
+            border-radius: 6px;
+            border-left: 4px solid var(--accent)
+        }
+
+        .online-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #34d399;
+            display: inline-block
+        }
+
+        /* Image modal overlay */
+        #imageModal {
+            position: fixed;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            padding: 20px;
+        }
+
+        #imageModal .modal-content {
+            background: transparent;
+            max-width: 66vw;
+            max-height: 80vh;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        #imageModal img.modal-image {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 8px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        #imageModal .close-btn {
+            position: absolute;
+            right: -12px;
+            top: -12px;
+            background: #0b1220;
+            color: #fff;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 1px solid #1f2937;
+            font-size: 18px;
+        }
+
+        /* Placeholder shown when no conversation selected */
+        .no-conv-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--muted);
+            font-size: 18px;
+            text-align: center;
+            padding: 24px;
+        }
+
+        /* conversation menu (header dropdown) */
+        .conv-menu {
+            position: absolute;
+            right: 0;
+            top: 40px;
+            background: #0b1220;
+            border: 1px solid #1f2937;
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(2, 6, 23, 0.6);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 180px;
+        }
+
+        .conv-menu .btn {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <div class="sidebar">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <div style="font-weight:700">Tin nhắn</div>
+                <div class="small">Dark</div>
+            </div>
+            <div class="search">
+                <input id="searchConvs" placeholder="Tìm hội thoại hoặc tin...">
+                <button id="newConv" class="btn">Mới</button>
+            </div>
+            <div class="conversations" id="conversations"></div>
+        </div>
+
+        <div class="chat-window">
+            <div class="chat-header">
+                <div>
+                    <div id="chatTitle" style="font-weight:700">Chọn cuộc trò chuyện</div>
+                    <div id="chatStatus" class="small">—</div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <input id="searchInConv" placeholder="Tìm trong hội thoại"
+                        style="padding:6px;border-radius:6px;border:1px solid #0b1220;background:#071018;color:#e5e7eb">
+                    <div style="position:relative">
+                        <button id="convMenuBtn" class="btn" title="Tùy chọn"><i
+                                class="fa-solid fa-ellipsis"></i></button>
+                        <div id="convMenu" class="conv-menu" style="display:none">
+                            <button id="deleteConvBtn" class="btn" style="background:#ef4444;color:#fff">Xóa cuộc trò
+                                chuyện</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="messages" class="chat-main"></div>
+
+            <div class="input-bar">
+                <input type="file" id="imageInput" accept="image/*" style="display:none">
+                <button id="attachBtn" class="btn"><i class="fa-solid fa-camera"></i></button>
+                <button id="emojiBtn" class="btn"><i class="fa-regular fa-face-smile"></i></button>
+                <input id="messageInput" type="text" placeholder="Nhập tin nhắn...">
+                <button id="sendBtn" class="btn" type="button"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.2/dist/index.min.js"></script>
+    <!-- Image modal markup -->
+    <div id="imageModal">
+        <div class="modal-content">
+            <div class="close-btn" id="imageModalClose">×</div>
+            <img id="imageModalImg" class="modal-image" src="" alt="">
+        </div>
+    </div>
+    <script src="/js/chat.js"></script>
+</body>
+
+</html>
