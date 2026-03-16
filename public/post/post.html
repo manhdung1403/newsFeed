@@ -291,7 +291,7 @@
     </style>
 </head>
 
-<body>
+<<body>
     <div class="header">
         <div class="header-content">
             <div class="logo">NewsFeed</div>
@@ -302,6 +302,11 @@
                 <span class="username" id="usernameDisplay"></span>
                 <a class="btn btn-profile" id="addPostLink" href="#" style="display: none;">Tạo bài đăng</a>
                 <a class="btn btn-profile" id="profileLink" href="#" style="display: none;">Trang cá nhân</a>
+
+                <!-- Thêm 2 link mới -->
+                <a class="btn btn-profile" href="/friends.html">Bạn bè</a>
+                <a class="btn btn-profile" href="/chat.html">Nhắn tin</a>
+
                 <button class="btn btn-logout" id="logoutBtn">Đăng xuất</button>
             </div>
         </div>
@@ -429,7 +434,7 @@
                     const liked = !!post.liked_by_current_user;
                     const likedClass = liked ? 'liked' : '';
                     const likeLabel = liked ? '💖 Đã thả tim' : '🤍 Thả tim';
-                    
+
                     postElement.innerHTML = `
                         <div class="post-header">
                             <div class="post-avatar">${avatarInitial}</div>
@@ -656,6 +661,6 @@
             });
         });
     </script>
-</body>
+    </body>
 
 </html>
