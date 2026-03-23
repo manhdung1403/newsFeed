@@ -505,6 +505,9 @@
     function onIncomingMessage(msg) {
         const convId = msg.conversation_id || msg.conversationId || msg.convId || null;
         if (currentConv && convId && convId === currentConv) {
+            // Bỏ qua nếu là tin mình gửi — đã xử lý qua message_sent, tránh hiển thị 2 lần
+            const isFromMe = (msg.sender_id || msg.senderId) === currentUser.id;
+            if (isFromMe) return;
             allMessages.push(msg);
             appendMessage(msg);
             autoScroll();

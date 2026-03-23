@@ -88,14 +88,23 @@ function requireAuth(req, res, next) {
 // ============================================================
 // SOCKET.IO REAL-TIME CHAT
 // ============================================================
-const onlineUsers = new Map(); // userId => socketId
+const onlineUsers = new Map();       // userId => socketId (giữ 1 cho user_status/chat cũ)
+const userSockets = new Map();       // userId => Set<socketId> (nhiều tab/màn hình)
+
+function emitToUser(userId, event, data) {
+    const ids = userSockets.get(String(userId));
+    if (ids) ids.forEach(sid => io.to(sid).emit(event, data));
+}
 
 io.on('connection', (socket) => {
     console.log(`⚡ Kết nối mới: ${socket.id}`);
 
     socket.on('register', (userId) => {
         socket.userId = userId;
-        onlineUsers.set(String(userId), socket.id);
+        const k = String(userId);
+        onlineUsers.set(k, socket.id);
+        if (!userSockets.has(k)) userSockets.set(k, new Set());
+        userSockets.get(k).add(socket.id);
         io.emit('user_status', { userId, status: 'online', lastSeen: null });
     });
 
@@ -108,9 +117,18 @@ io.on('connection', (socket) => {
         try {
             const imgParam = (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('data:')) ? null : imageUrl;
             let pool = await sql.connect(dbConfig);
+            // Nếu dùng conversationId mà receiverId null, lấy 1 participant khác làm receiver (DB có thể yêu cầu NOT NULL)
+            let recvId = receiverId;
+            if ((recvId == null || recvId === '') && conversationId) {
+                const pr = await pool.request()
+                    .input('convId', sql.Int, conversationId)
+                    .input('senderId', sql.Int, senderId)
+                    .query(`SELECT TOP 1 user_id FROM ConversationParticipants WHERE conversation_id = @convId AND user_id <> @senderId`);
+                if (pr.recordset && pr.recordset[0]) recvId = pr.recordset[0].user_id;
+            }
             const result = await pool.request()
                 .input('senderId', sql.Int, senderId)
-                .input('receiverId', sql.Int, receiverId || null)
+                .input('receiverId', sql.Int, recvId || senderId)
                 .input('text', sql.NVarChar, text || null)
                 .input('replyId', sql.Int, replyToId || null)
                 .input('convId', sql.Int, conversationId || null)
@@ -148,21 +166,17 @@ io.on('connection', (socket) => {
                     .query(`UPDATE Conversations SET last_message = @text, last_updated = GETDATE() WHERE id = @convId`);
 
                 io.to(`conversation_${conversationId}`).emit('receive_message', savedMsg);
-                // Gửi unread_badge_update tới từng participant (trừ người gửi) để cập nhật badge real-time
                 const parts = await pool.request()
                     .input('convId', sql.Int, conversationId)
                     .query(`SELECT user_id FROM ConversationParticipants WHERE conversation_id = @convId`);
                 for (const p of (parts.recordset || [])) {
-                    if (p.user_id !== senderId) {
-                        const sid = onlineUsers.get(String(p.user_id));
-                        if (sid) io.to(sid).emit('unread_badge_update');
-                    }
+                    if (p.user_id !== senderId) emitToUser(p.user_id, 'unread_badge_update');
                 }
             } else {
                 const receiverSocketId = onlineUsers.get(String(receiverId));
                 if (receiverSocketId) {
                     io.to(receiverSocketId).emit('receive_message', savedMsg);
-                    io.to(receiverSocketId).emit('unread_badge_update');
+                    emitToUser(receiverId, 'unread_badge_update');
                 }
             }
 
@@ -197,7 +211,10 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', async () => {
         if (socket.userId) {
-            onlineUsers.delete(String(socket.userId));
+            const k = String(socket.userId);
+            const set = userSockets.get(k);
+            if (set) { set.delete(socket.id); if (set.size === 0) userSockets.delete(k); }
+            if (onlineUsers.get(k) === socket.id) onlineUsers.delete(k);
             const lastSeenTime = new Date().toISOString();
             try {
                 let pool = await sql.connect(dbConfig);
@@ -569,8 +586,7 @@ app.post('/api/conversations/:id/mark-read', requireAuth, async (req, res) => {
             .input('convId', sql.Int, convId)
             .input('userId', sql.Int, userId)
             .query(`UPDATE Messages SET seen = 1, seen_at = GETDATE() WHERE conversation_id = @convId AND sender_id <> @userId`);
-        const sid = onlineUsers.get(String(userId));
-        if (sid) io.to(sid).emit('unread_badge_update');
+        emitToUser(userId, 'unread_badge_update');
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
