@@ -326,6 +326,20 @@
             font-size: 14px;
         }
 
+        .chat-unread-badge {
+            background: #ed4956;
+            color: #fff;
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 12px;
+            margin-left: 8px;
+            line-height: 1.2;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 22px;
+        }
+
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -344,29 +358,12 @@
             </div>
             <div id="userInfo" class="user-info" style="display: none;">
                 <span class="username" id="usernameDisplay"></span>
+                <a class="btn btn-profile" id="addPostLink" href="#" style="display: none;">Tạo bài đăng</a>
+                <a class="btn btn-profile" id="profileLink" href="#" style="display: none;">Trang cá nhân</a>
 
-
-                <a class="btn btn-profile icon-btn" id="profileLink" href="#" style="display: none;"
-                    title="Trang cá nhân" aria-label="Trang cá nhân">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path
-                            d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                    </svg>
-                </a>
-
-                <a class="btn btn-profile icon-btn" href="/friends.html" title="Bạn bè" aria-label="Bạn bè">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path
-                            d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 2 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
-                    </svg>
-                </a>
-
-                <a class="btn btn-profile icon-btn" href="/chat.html" title="Nhắn tin" aria-label="Nhắn tin">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path
-                            d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
-                    </svg>
-                </a>
+                <!-- Thêm 2 link mới -->
+                <a class="btn btn-profile" href="/friends.html">Bạn bè</a>
+                <a class="btn btn-profile" href="/chat.html">Nhắn tin</a>
 
                 <button class="btn btn-logout icon-btn" id="logoutBtn" title="Đăng xuất" aria-label="Đăng xuất">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -382,9 +379,11 @@
         <p style="text-align: center; padding: 40px; color: #8e8e8e;">Đang kiểm tra đăng nhập...</p>
     </div>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script>
         let isLoggedIn = false;
         let currentUser = null;
+        let notificationSocket = null;
 
         // Lấy base URL
         const baseUrl = window.location.origin === 'http://127.0.0.1:5500' || window.location.protocol === 'file:'
@@ -426,6 +425,8 @@
             usernameDisplay.textContent = currentUser.username;
             profileLink.href = `${baseUrl}/user/profile.html`;
             profileLink.style.display = 'inline-block';
+            addPostLink.href = `${baseUrl}/post/addpost.html`;
+            addPostLink.style.display = 'inline-block';
         }
 
         // Cập nhật UI khi chưa đăng nhập
@@ -442,6 +443,7 @@
             `;
             userInfo.style.display = 'none';
             if (profileLink) profileLink.style.display = 'none';
+            if (addPostLink) addPostLink.style.display = 'none';
 
             // Hiển thị thông báo yêu cầu đăng nhập
             postContainer.innerHTML = `
@@ -454,6 +456,46 @@
                     </div>
                 </div>
             `;
+        }
+
+        function initNotificationSocket() {
+            if (notificationSocket) notificationSocket.disconnect();
+            if (!currentUser || !currentUser.id) return;
+            try {
+                notificationSocket = io(baseUrl, { withCredentials: true });
+                notificationSocket.emit('register', currentUser.id);
+                notificationSocket.on('unread_badge_update', () => loadChatUnreadBadge());
+            } catch (e) { notificationSocket = null; }
+        }
+
+        async function loadChatUnreadBadge() {
+            try {
+                const badge = document.getElementById('chatUnreadBadge');
+                if (!badge) return;
+                // Show temporarily while loading
+                badge.style.display = 'inline-flex';
+                badge.textContent = '...';
+
+                const r = await fetch(`${baseUrl}/api/conversations/unread-total`, {
+                    credentials: 'include'
+                });
+                if (!r.ok) {
+                    badge.style.display = 'none';
+                    return;
+                }
+
+                const data = await r.json();
+                const count = Number(data.unreadCount) || 0;
+                if (count > 0) {
+                    badge.textContent = String(count);
+                    badge.style.display = 'inline-flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } catch {
+                const badge = document.getElementById('chatUnreadBadge');
+                if (badge) badge.style.display = 'none';
+            }
         }
 
         // Lấy danh sách bài đăng
@@ -753,6 +795,10 @@
         }
         document.addEventListener('DOMContentLoaded', () => {
             checkAuthStatus();
+            // Cập nhật badge khi chuyển tab về trang post (vd: từ chat quay lại)
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && isLoggedIn) loadChatUnreadBadge();
+            });
 
             document.addEventListener('click', (e) => {
                 if (e.target.id === 'logoutBtn') {

@@ -114,3 +114,25 @@ CREATE TABLE MessageReactions
     PRIMARY KEY (message_id, user_id)
 );
 GO
+-- 1. Thêm cột phân loại nhóm và trả lời tin nhắn
+ALTER TABLE Conversations ADD is_group BIT DEFAULT 0;
+ALTER TABLE Messages ADD reply_to_id INT NULL FOREIGN KEY REFERENCES Messages(id);
+GO
+
+-- 2. Procedure lấy tin nhắn kèm nội dung tin nhắn được reply (để hiển thị quote)
+CREATE OR ALTER PROCEDURE GetMessagesByConversation
+    @conversationId INT
+AS
+BEGIN
+    SELECT 
+        m.*, 
+        u.username AS sender_name,
+        rm.message_text AS replied_text,
+        ru.username AS replied_user
+    FROM Messages m
+    JOIN Users u ON m.sender_id = u.id
+    LEFT JOIN Messages rm ON m.reply_to_id = rm.id
+    LEFT JOIN Users ru ON rm.sender_id = ru.id
+    WHERE m.conversation_id = @conversationId
+    ORDER BY m.created_at ASC
+END
