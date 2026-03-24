@@ -129,23 +129,23 @@
         }
 
         .main-content {
-            max-width: 935px;
+            max-width: 1200px;
             margin: 0 auto;
             margin-top: 60px;
-            padding: 0 20px;
+            padding: 0 12px;
             display: flex;
-            gap: 16px;
+            gap: 12px;
             align-items: flex-start;
         }
 
         .feed {
-            flex: 1 1 0;
-            max-width: 614px;
+            flex: 1 1 auto;
+            min-width: 0;
         }
 
         .sidebar {
-            width: 280px;
-            min-width: 250px;
+            width: 340px;
+            min-width: 320px;
             position: sticky;
             top: 80px;
             align-self: flex-start;
@@ -155,12 +155,13 @@
             background: white;
             border: 1px solid #dbdbdb;
             border-radius: 8px;
-            padding: 12px;
+            padding: 10px;
         }
 
         .sidebar-card h2 {
-            margin: 0 0 8px;
-            font-size: 16px;
+            margin: 0 0 6px;
+            font-size: 15px;
+            font-weight: 700;
             color: #262626;
         }
 
@@ -169,16 +170,21 @@
             padding: 8px 10px;
             border: 1px solid #dbdbdb;
             border-radius: 6px;
-            margin-bottom: 10px;
-            font-size: 14px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        #sidebarUsersList {
+            max-height: 500px;
+            overflow-y: auto;
         }
 
         .user-suggestion {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 10px;
-            padding: 8px 0;
+            gap: 8px;
+            padding: 6px 0;
             border-bottom: 1px solid #f0f0f0;
         }
 
@@ -190,23 +196,29 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            min-width: 0;
+            flex: 1;
         }
 
         .user-suggestion .username {
-            font-size: 14px;
+            font-size: 13px;
             color: #262626;
             font-weight: 600;
             text-decoration: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .user-suggestion .followers {
-            font-size: 12px;
+            font-size: 11px;
             color: #8e8e8e;
+            white-space: nowrap;
         }
 
         .user-suggestion .avatar {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
             display: flex;
@@ -214,8 +226,9 @@
             justify-content: center;
             color: white;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 16px;
             overflow: hidden;
+            flex-shrink: 0;
         }
 
         .user-suggestion .avatar img {
@@ -225,8 +238,10 @@
         }
 
         .user-suggestion .follow-btn {
-            padding: 4px 8px;
-            font-size: 12px;
+            padding: 4px 10px;
+            font-size: 11px;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .post-card {
