@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node start.js",
-    "start:2": "set PORT=3001&& node start.js",
+    "start": "node backend/start.js",
+    "start:2": "set PORT=3001&& node backend/start.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
