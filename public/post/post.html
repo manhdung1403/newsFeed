@@ -321,6 +321,74 @@
             color: #8e8e8e;
             font-size: 14px;
         }
+        /* Edit Modal Styles */
+        .edit-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+        .edit-modal {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .edit-modal h2 {
+            margin: 0;
+            font-size: 20px;
+            color: var(--text-dark, #262626);
+        }
+        .edit-modal textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 1px solid var(--border-light, #dbdbdb);
+            border-radius: 8px;
+            resize: vertical;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        .edit-modal textarea:focus {
+            outline: none;
+            border-color: var(--primary-blue, #0095f6);
+        }
+        .edit-modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        .edit-modal-actions button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+        .edit-modal-cancel {
+            background-color: transparent;
+            color: var(--text-dark, #262626);
+            border: 1px solid var(--border-light, #dbdbdb) !important;
+        }
+        .edit-modal-cancel:hover {
+            background-color: var(--bg-light, #fafafa);
+        }
+        .edit-modal-save {
+            background-color: var(--primary-blue, #0095f6);
+            color: white;
+        }
+        .edit-modal-save:hover {
+            background-color: #1877f2;
+        }
     </style>
 </head>
 
@@ -363,6 +431,18 @@
                 </div>
             </div>
         </aside>
+    </div>
+
+    <!-- Edit Post Modal -->
+    <div class="edit-modal-overlay" id="editPostModalFeed">
+        <div class="edit-modal">
+            <h2>Chỉnh sửa bài viết</h2>
+            <textarea id="editPostCaptionFeed" placeholder="Nhập nội dung mới..."></textarea>
+            <div class="edit-modal-actions">
+                <button class="edit-modal-cancel" id="cancelEditBtnFeed">Hủy</button>
+                <button class="edit-modal-save" id="saveEditBtnFeed">Lưu thay đổi</button>
+            </div>
+        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -684,10 +764,58 @@
             }).join('');
         }
 
+        let currentEditPostIdFeed = null;
+
+        document.getElementById('cancelEditBtnFeed').addEventListener('click', () => {
+            document.getElementById('editPostModalFeed').style.display = 'none';
+            currentEditPostIdFeed = null;
+        });
+
+        document.getElementById('saveEditBtnFeed').addEventListener('click', async () => {
+            if (!currentEditPostIdFeed) return;
+            const newCaption = document.getElementById('editPostCaptionFeed').value;
+            
+            try {
+                const response = await fetch(`${baseUrl}/api/posts/${currentEditPostIdFeed}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ caption: newCaption }),
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    fetchPosts(); 
+                    document.getElementById('editPostModalFeed').style.display = 'none';
+                    currentEditPostIdFeed = null;
+                } else {
+                    alert('Lỗi: ' + data.error);
+                }
+            } catch (err) {
+                console.error('Lỗi khi sửa bài:', err);
+            }
+        });
+
         document.addEventListener('click', async (e) => {
+            if (e.target.id === 'editPostModalFeed') {
+                document.getElementById('editPostModalFeed').style.display = 'none';
+                currentEditPostIdFeed = null;
+                return;
+            }
+
             const likeBtn = e.target.closest('.like-btn');
             const commentToggleBtn = e.target.closest('.comment-toggle-btn');
             const commentSubmitBtn = e.target.closest('.comment-submit-btn');
+            const editBtn = e.target.closest('.edit-post-btn');
+
+            if (editBtn) {
+                const postId = editBtn.getAttribute('data-post-id');
+                const oldCaption = decodeURIComponent(editBtn.getAttribute('data-caption'));
+                currentEditPostIdFeed = postId;
+                document.getElementById('editPostCaptionFeed').value = oldCaption;
+                document.getElementById('editPostModalFeed').style.display = 'flex';
+                document.getElementById('editPostCaptionFeed').focus();
+                return;
+            }
 
             if (likeBtn) {
                 const postId = likeBtn.getAttribute('data-post-id');

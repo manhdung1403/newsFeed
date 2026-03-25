@@ -349,6 +349,74 @@
                 min-width: 100px;
             }
         }
+        /* Edit Modal Styles */
+        .edit-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+        .edit-modal {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .edit-modal h2 {
+            margin: 0;
+            font-size: 20px;
+            color: var(--text-dark, #262626);
+        }
+        .edit-modal textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 1px solid var(--border-light, #dbdbdb);
+            border-radius: 8px;
+            resize: vertical;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        .edit-modal textarea:focus {
+            outline: none;
+            border-color: var(--primary-blue, #0095f6);
+        }
+        .edit-modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        .edit-modal-actions button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+        .edit-modal-cancel {
+            background-color: transparent;
+            color: var(--text-dark, #262626);
+            border: 1px solid var(--border-light, #dbdbdb) !important;
+        }
+        .edit-modal-cancel:hover {
+            background-color: var(--bg-light, #fafafa);
+        }
+        .edit-modal-save {
+            background-color: var(--primary-blue, #0095f6);
+            color: white;
+        }
+        .edit-modal-save:hover {
+            background-color: #1877f2;
+        }
     </style>
 </head>
 
@@ -368,9 +436,9 @@
                     <h1 id="displayUsername">...</h1>
                     <div class="action-buttons">
                         <button id="editBtn" style="display:none">Chỉnh sửa trang cá nhân</button>
-                        <button id="createPostBtn" style="display:none"><i class="fas fa-plus"></i> Tạo bài
-                            đăng</button>
+                        <button id="createPostBtn" style="display:none"><i class="fas fa-plus"></i> Tạo bài đăng</button>
                         <button id="followBtn" style="display:none">Theo dõi</button>
+                        <button id="togglePrivacyBtn" class="btn" style="display:none; font-weight:600;"><i class="fas fa-lock"></i> <span id="privacyStatusText">Công khai</span></button>
                         <button id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
                     </div>
                 </div>
@@ -409,6 +477,18 @@
                 <p>Đang tải bài viết...</p>
             </div>
         </main>
+    </div>
+
+    <!-- Edit Post Modal -->
+    <div class="edit-modal-overlay" id="editPostModalProfile">
+        <div class="edit-modal">
+            <h2>Chỉnh sửa bài viết</h2>
+            <textarea id="editPostCaptionProfile" placeholder="Nhập nội dung mới..."></textarea>
+            <div class="edit-modal-actions">
+                <button class="edit-modal-cancel" id="cancelEditBtnProfile">Hủy</button>
+                <button class="edit-modal-save" id="saveEditBtnProfile">Lưu thay đổi</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -454,6 +534,11 @@
                                 <i class="fas fa-comments"></i>
                                 <span>${commentCount}</span>
                             </div>
+                            ${String(p.user_id) === String(currentUser.id) ? `
+                            <button class="edit-post-btn-profile post-stat" data-post-id="${p.id}" data-caption="${encodeURIComponent(p.caption || '')}" style="background:none; border:none; color:white; cursor:pointer; font-size:16px; font-weight:600;" title="Sửa bài viết">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            ` : ''}
                         </div>
                     </div>
                 `;
@@ -528,6 +613,11 @@
                 editBtn.style.display = 'inline-block';
                 createPostBtn.style.display = 'inline-block';
                 followBtn.style.display = 'none';
+                
+                const privacyBtn = document.getElementById('togglePrivacyBtn');
+                privacyBtn.style.display = 'inline-block';
+                privacyBtn.dataset.isPrivate = userProfile.is_private ? '1' : '0';
+                document.getElementById('privacyStatusText').textContent = userProfile.is_private ? 'Chế độ: Riêng tư' : 'Chế độ: Công khai';
             } else {
                 editBtn.style.display = 'none';
                 createPostBtn.style.display = 'none';
@@ -535,8 +625,24 @@
                 followBtn.textContent = userProfile.is_following ? 'Đang theo dõi' : 'Theo dõi';
             }
 
-            const postsResp = await fetch('/api/posts', { credentials: 'include' });
             const postsContainer = document.getElementById('posts');
+
+            if (!isOwnProfile && userProfile.is_private) {
+                postsContainer.innerHTML = `
+                    <div class="empty-state" style="padding: 60px 20px; text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">🔒</div>
+                        <h2 style="font-size: 18px; margin-bottom: 8px;">Tài khoản riêng tư</h2>
+                        <p style="color: #8e8e8e; font-size: 14px;">Chỉ chủ tài khoản mới có thể xem các bài viết này.</p>
+                    </div>
+                `;
+                const tabPosts = document.getElementById('tab-posts');
+                const tabLikes = document.getElementById('tab-likes');
+                if (tabPosts) tabPosts.style.display = 'none';
+                if (tabLikes) tabLikes.style.display = 'none';
+                return;
+            }
+
+            const postsResp = await fetch('/api/posts', { credentials: 'include' });
 
             if (!postsResp.ok) {
                 postsContainer.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Lỗi tải dữ liệu.</p></div>';
@@ -554,6 +660,30 @@
         document.getElementById('editBtn').addEventListener('click', function () {
             window.location.href = '/user/editprofile.html';
         });
+
+        const togglePrivacyBtn = document.getElementById('togglePrivacyBtn');
+        if (togglePrivacyBtn) {
+            togglePrivacyBtn.addEventListener('click', async function () {
+                const btn = this;
+                const currentPrivate = btn.dataset.isPrivate === '1';
+                const newPrivate = !currentPrivate;
+                try {
+                    const res = await fetch('/api/user/privacy', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ is_private: newPrivate }),
+                        credentials: 'include'
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        btn.dataset.isPrivate = newPrivate ? '1' : '0';
+                        document.getElementById('privacyStatusText').textContent = newPrivate ? 'Chế độ: Riêng tư' : 'Chế độ: Công khai';
+                    } else {
+                        alert('Lỗi: ' + data.error);
+                    }
+                } catch(e) { console.error('Error toggling privacy:', e); }
+            });
+        }
 
         document.getElementById('followBtn').addEventListener('click', async function () {
             const followBtn = document.getElementById('followBtn');
@@ -584,6 +714,69 @@
 
         document.getElementById('tab-posts').addEventListener('click', function () {
             switchTab('posts');
+        });
+
+        let currentEditPostIdProfile = null;
+
+        document.getElementById('cancelEditBtnProfile').addEventListener('click', () => {
+            document.getElementById('editPostModalProfile').style.display = 'none';
+            currentEditPostIdProfile = null;
+        });
+
+        document.getElementById('saveEditBtnProfile').addEventListener('click', async () => {
+            if (!currentEditPostIdProfile) return;
+            const newCaption = document.getElementById('editPostCaptionProfile').value;
+            const editBtnEl = document.querySelector(`.edit-post-btn-profile[data-post-id="${currentEditPostIdProfile}"]`);
+            const oldCaption = editBtnEl ? decodeURIComponent(editBtnEl.getAttribute('data-caption')) : '';
+            
+            if (newCaption === oldCaption) {
+                document.getElementById('editPostModalProfile').style.display = 'none';
+                currentEditPostIdProfile = null;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/posts/${currentEditPostIdProfile}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ caption: newCaption }),
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    const postIndex = allPosts.findIndex(p => String(p.id) === String(currentEditPostIdProfile));
+                    if (postIndex > -1) {
+                        allPosts[postIndex].caption = newCaption;
+                        // update DOM data attribute to avoid reset
+                        if(editBtnEl) editBtnEl.setAttribute('data-caption', encodeURIComponent(newCaption));
+                        switchTab(currentTab);
+                    }
+                    document.getElementById('editPostModalProfile').style.display = 'none';
+                    currentEditPostIdProfile = null;
+                } else {
+                    alert('Lỗi: ' + data.error);
+                }
+            } catch (err) {
+                console.error('Lỗi khi sửa bài:', err);
+            }
+        });
+
+        document.addEventListener('click', async (e) => {
+            if (e.target.id === 'editPostModalProfile') {
+                document.getElementById('editPostModalProfile').style.display = 'none';
+                currentEditPostIdProfile = null;
+                return;
+            }
+
+            const editBtn = e.target.closest('.edit-post-btn-profile');
+            if (editBtn) {
+                e.stopPropagation();
+                currentEditPostIdProfile = editBtn.getAttribute('data-post-id');
+                const oldCaption = decodeURIComponent(editBtn.getAttribute('data-caption'));
+                document.getElementById('editPostCaptionProfile').value = oldCaption;
+                document.getElementById('editPostModalProfile').style.display = 'flex';
+                document.getElementById('editPostCaptionProfile').focus();
+            }
         });
 
         document.getElementById('tab-likes').addEventListener('click', function () {

@@ -70,8 +70,7 @@ const dbConfig = {
     user: 'sa',
     password: '0944364247',
     server: 'localhost',
-    port: 64957,
-    database: 'newsFeedDb',
+        database: 'newsFeedDb',
     options: {
         encrypt: false,
         trustServerCertificate: true
@@ -344,7 +343,7 @@ app.get('/api/user/profile', requireAuth, async (req, res) => {
         let pool = await sql.connect(dbConfig);
         let result = await pool.request()
             .input('userId', sql.Int, req.session.userId)
-            .query(`SELECT id, username, email, avatar, bio, dob, created_at,
+            .query(`SELECT id, username, email, avatar, bio, dob, created_at, is_private,
                     (SELECT COUNT(*) FROM Follows WHERE follower_id = @userId) AS following_count,
                     (SELECT COUNT(*) FROM Follows WHERE following_id = @userId) AS followers_count
                 FROM Users WHERE id = @userId`);
@@ -404,7 +403,7 @@ app.get('/api/posts/debug', requireAuth, async (req, res) => {
 
 app.put('/api/user/profile', requireAuth, async (req, res) => {
     try {
-        const { username, email, bio, dob, avatar } = req.body;
+        const { username, email, bio, dob, avatar, is_private } = req.body;
         const userId = req.session.userId;
 
         if (!username || !email) {
@@ -428,12 +427,13 @@ app.put('/api/user/profile', requireAuth, async (req, res) => {
         }
 
         // Update user profile
-        let updateQuery = `UPDATE Users SET username = @username, email = @email, bio = @bio`;
+        let updateQuery = `UPDATE Users SET username = @username, email = @email, bio = @bio, is_private = @is_private`;
         let request = pool.request()
             .input('username', sql.NVarChar, username)
             .input('email', sql.VarChar, email)
             .input('bio', sql.NVarChar(sql.MAX), bio || null)
-            .input('userId', sql.Int, userId);
+            .input('userId', sql.Int, userId)
+            .input('is_private', sql.Bit, is_private ? 1 : 0);
 
         if (dob) {
             updateQuery += `, dob = @dob`;
@@ -468,6 +468,24 @@ app.put('/api/user/profile', requireAuth, async (req, res) => {
     }
 });
 
+app.put('/api/user/privacy', requireAuth, async (req, res) => {
+    try {
+        const { is_private } = req.body;
+        const userId = req.session.userId;
+
+        let pool = await sql.connect(dbConfig);
+        await pool.request()
+            .input('is_private', sql.Bit, is_private ? 1 : 0)
+            .input('userId', sql.Int, userId)
+            .query(`UPDATE Users SET is_private = @is_private WHERE id = @userId`);
+            
+        res.json({ success: true, is_private: is_private });
+    } catch (err) {
+        console.error('Lỗi cập nhật privacy:', err);
+        res.status(500).json({ error: 'Lỗi server: ' + err.message });
+    }
+});
+
 // POST APIs
 app.get('/api/posts', requireAuth, async (req, res) => {
     try {
@@ -483,6 +501,7 @@ app.get('/api/posts', requireAuth, async (req, res) => {
                     u.id AS user_id, 
                     u.username,
                     u.avatar AS user_avatar,
+                    u.is_private,
                     ISNULL(lc.like_count, 0) AS like_count,
                     ISNULL(cc.comment_count, 0) AS comment_count,
                     CASE WHEN ul.user_id IS NULL THEN 0 ELSE 1 END AS liked_by_current_user,
@@ -503,6 +522,8 @@ app.get('/api/posts', requireAuth, async (req, res) => {
                     ON ul.post_id = p.id AND ul.user_id = @currentUserId
                 LEFT JOIN Follows f
                     ON f.following_id = u.id AND f.follower_id = @currentUserId
+                WHERE ISNULL(u.is_private, 0) = 0 
+                   OR p.user_id = @currentUserId 
                 ORDER BY p.created_at DESC
             `);
         res.json(result.recordset);
@@ -534,6 +555,36 @@ app.post('/api/posts', requireAuth, async (req, res) => {
         res.json({ success: true, message: 'Bài đăng đã được tạo thành công', post: result.recordset[0] });
     } catch (err) {
         console.error('Lỗi tạo bài đăng:', err);
+        res.status(500).json({ error: 'Lỗi server: ' + err.message });
+    }
+});
+
+app.put('/api/posts/:id', requireAuth, async (req, res) => {
+    try {
+        const postId = parseInt(req.params.id, 10);
+        const { caption } = req.body;
+        const userId = req.session.userId;
+
+        if (isNaN(postId)) return res.status(400).json({ error: 'ID bài viết không hợp lệ' });
+
+        let pool = await sql.connect(dbConfig);
+        let check = await pool.request()
+            .input('post_id', sql.Int, postId)
+            .input('user_id', sql.Int, userId)
+            .query(`SELECT id FROM Posts WHERE id = @post_id AND user_id = @user_id`);
+
+        if (check.recordset.length === 0) {
+            return res.status(403).json({ error: 'Không có quyền sửa bài viết này hoặc bài viết không tồn tại' });
+        }
+
+        await pool.request()
+            .input('post_id', sql.Int, postId)
+            .input('caption', sql.NVarChar, caption || null)
+            .query(`UPDATE Posts SET caption = @caption WHERE id = @post_id`);
+
+        res.json({ success: true, message: 'Cập nhật thành công' });
+    } catch (err) {
+        console.error('Lỗi sửa bài đăng:', err);
         res.status(500).json({ error: 'Lỗi server: ' + err.message });
     }
 });
@@ -620,7 +671,7 @@ app.get('/api/users/:id', requireAuth, async (req, res) => {
         const result = await pool.request()
             .input('me', sql.Int, me)
             .input('targetId', sql.Int, targetId)
-            .query(`SELECT u.id, u.username, u.email, u.avatar, u.bio, u.dob, u.created_at,
+            .query(`SELECT u.id, u.username, u.email, u.avatar, u.bio, u.dob, u.created_at, u.is_private,
                     (SELECT COUNT(*) FROM Follows WHERE follower_id = u.id) AS following_count,
                     (SELECT COUNT(*) FROM Follows WHERE following_id = u.id) AS followers_count,
                     CASE WHEN f.follower_id IS NULL THEN 0 ELSE 1 END AS is_following
@@ -900,6 +951,14 @@ server.listen(PORT, async () => {
     try {
         let pool = await sql.connect(dbConfig);
         if (pool.connected) console.log("Kết nối SQL Server thành công.");
+
+        // Add is_private column if not exists
+        await pool.request().query(`
+            IF COL_LENGTH('dbo.Users', 'is_private') IS NULL
+            BEGIN
+                ALTER TABLE dbo.Users ADD is_private BIT DEFAULT 0;
+            END
+        `);
 
         // Ensure follows table exists so follow/unfollow works even if DB schema isn't pre-created
         await pool.request().query(`
