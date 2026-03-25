@@ -406,7 +406,9 @@
 
                 <!-- Thêm 2 link mới -->
                 <a class="btn btn-profile" href="/friends.html">Bạn bè</a>
-                <a class="btn btn-profile" href="/chat.html">Nhắn tin</a>
+                <a class="btn btn-profile" href="/chat.html">
+                    Nhắn tin <span id="chatUnreadBadge" class="chat-unread-badge" style="display:none;">0</span>
+                </a>
 
                 <button class="btn btn-logout icon-btn" id="logoutBtn" title="Đăng xuất" aria-label="Đăng xuất">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -468,6 +470,8 @@
                     isLoggedIn = true;
                     currentUser = data.user;
                     updateUIForLoggedIn();
+                    initNotificationSocket();
+                    loadChatUnreadBadge();
                     fetchPosts();
                     fetchSuggestedUsers();
                 } else {

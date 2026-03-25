@@ -31,7 +31,7 @@ body {
     --danger-red: #ed4956;
     
     /* Accent Colors */
-    --accent-cyan: #06b6d4;
+    --accent-cyan: #0095f6;
     --accent-orange: #f97316;
     
     /* Text Colors */
@@ -51,7 +51,7 @@ body {
     /* Dark Theme */
     --dark-bg: #0f1720;
     --dark-panel: #111827;
-    --dark-accent: #0ea5e9;
+    --dark-accent: #0095f6;
     --dark-bubble: #0b1220;
 }
 

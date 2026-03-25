@@ -9,16 +9,11 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 function killPort(port) {
     try {
         if (process.platform === 'win32') {
-            const out = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
-            const pids = new Set();
-            out.split('\n').forEach(line => {
-                const m = line.trim().match(/\s+(\d+)\s*$/);
-                if (m && m[1] !== '0') pids.add(m[1]);
-            });
-            pids.forEach(pid => {
-                try { execSync(`taskkill /PID ${pid} /F`, { stdio: 'ignore' }); } catch (_) {}
-            });
-            if (pids.size) console.log('Đã giải phóng port', port);
+            // Use PowerShell cmdlets instead of `netstat` to avoid PATH issues.
+            const ps = `Get-NetTCPConnection -LocalPort ${port} -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique`;
+            const cmd = `powershell -NoProfile -Command "$pids = @(${ps}); foreach ($pid in $pids) { if ($pid -and $pid -ne 0) { Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue | Out-Null } }"`;
+            execSync(cmd, { stdio: 'ignore' });
+            console.log('Đã giải phóng port (nếu cần)', port);
         } else {
             execSync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, { stdio: 'ignore' });
         }
